@@ -24,9 +24,10 @@ main()
     console.log(err);
 });
 
-app.get("/",(req,res)=>{
-    res.send("Hi, I am root");
+app.get("/", (req, res) => {
+    res.redirect("/listings");
 });
+
 
 app.set("view engine","ejs");
 app.set("views",path.join(__dirname,"views"));
