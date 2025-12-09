@@ -3,13 +3,10 @@ FROM node:18
 WORKDIR /app
 
 COPY package*.json ./
-
 RUN npm install
 
+# Copy ALL project files including /init
 COPY . .
-
-# important: ensure seed folder goes inside image
-COPY init ./init
 
 EXPOSE 8080
 
