@@ -68,18 +68,24 @@ store.on("error", (err) => {
   console.log("❌ Mongo session store error", err);
 });
 
+const sessionSecret =
+  process.env.SECRET || "tripnext_fallback_secret_dev";
+
 const sessionConfig = {
   store,
   name: "session",
-  secret: process.env.SECRET,
+  secret: sessionSecret,
   resave: false,
   saveUninitialized: false,
   cookie: {
     httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
     expires: Date.now() + 7 * 24 * 60 * 60 * 1000,
     maxAge: 7 * 24 * 60 * 60 * 1000,
   },
 };
+
 
 app.use(session(sessionConfig));
 app.use(flash());
