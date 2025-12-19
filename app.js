@@ -5,6 +5,10 @@ if (process.env.NODE_ENV !== "production") {
 const express = require("express");
 const app = express();
 const mongoose = require("mongoose");
+
+mongoose.set("bufferCommands", false);
+mongoose.set("strictQuery", true);
+
 const path = require("path");
 const methodOverride = require("method-override");
 const ejsMate = require("ejs-mate");
