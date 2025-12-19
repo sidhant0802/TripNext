@@ -6,6 +6,7 @@ const express = require("express");
 const app = express();
 const mongoose = require("mongoose");
 
+// 🔒 Mongoose settings for serverless
 mongoose.set("bufferCommands", false);
 mongoose.set("strictQuery", true);
 
@@ -14,17 +15,19 @@ const methodOverride = require("method-override");
 const ejsMate = require("ejs-mate");
 const ExpressError = require("./utils/ExpressError");
 
+// Sessions & auth
 const session = require("express-session");
 const MongoStore = require("connect-mongo");
 const flash = require("connect-flash");
-
 const passport = require("passport");
 const LocalStrategy = require("passport-local");
 const User = require("./models/user");
 
+// Routes
 const listingRouter = require("./routes/listing");
 const reviewRouter = require("./routes/review");
 const userRouter = require("./routes/user");
+const seedRouter = require("./routes/seed"); // ✅ TEMP: remove after seeding
 
 const getDemoOwner = require("./utils/getDemoOwner");
 
@@ -40,7 +43,7 @@ app.use(methodOverride("_method"));
 app.use(express.static(path.join(__dirname, "public")));
 
 /* =========================
-   DATABASE (SERVERLESS SAFE)
+   DATABASE (SERVERLESS Indicates)
 ========================= */
 const dbUrl = process.env.MONGO_URI;
 
@@ -56,15 +59,16 @@ async function connectDB() {
   isConnected = true;
   console.log("✅ MongoDB connected");
 
+  // create demo owner once
   await getDemoOwner();
 }
 
 connectDB().catch((err) => {
-  console.error("❌ MongoDB error:", err);
+  console.error("❌ MongoDB connection error:", err);
 });
 
 /* =========================
-   SESSION
+   SESSION CONFIG
 ========================= */
 const sessionSecret = process.env.SECRET || "tripnext_dev_fallback";
 
@@ -76,11 +80,12 @@ const store = MongoStore.create({
   touchAfter: 24 * 3600,
 });
 
-store.on("error", (e) => {
-  console.error("❌ Session store error:", e);
+store.on("error", (err) => {
+  console.error("❌ Mongo session store error:", err);
 });
 
-app.set("trust proxy", 1); // 🔥 REQUIRED for Vercel
+// REQUIRED for Vercel cookies
+app.set("trust proxy", 1);
 
 app.use(
   session({
@@ -102,7 +107,7 @@ app.use(
 app.use(flash());
 
 /* =========================
-   PASSPORT
+   PASSPORT CONFIG
 ========================= */
 app.use(passport.initialize());
 app.use(passport.session());
@@ -131,6 +136,9 @@ app.get("/", (req, res) => {
 app.use("/listings", listingRouter);
 app.use("/listings/:id/reviews", reviewRouter);
 app.use("/", userRouter);
+
+// ⚠️ TEMP: Seed route — REMOVE AFTER SEEDING
+app.use("/admin", seedRouter);
 
 /* =========================
    ERROR HANDLING
