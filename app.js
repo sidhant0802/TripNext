@@ -54,7 +54,7 @@ async function connectDB() {
   });
 
   console.log("✅ MongoDB connected");
-  await getDemoOwner();
+  // await getDemoOwner();
 }
 
 // 🔥 Connect immediately (ONCE per cold start)
