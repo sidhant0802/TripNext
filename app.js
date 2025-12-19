@@ -6,8 +6,6 @@ const express = require("express");
 const app = express();
 const mongoose = require("mongoose");
 
-// mongoose.set("strictQuery", true);
-
 const path = require("path");
 const methodOverride = require("method-override");
 const ejsMate = require("ejs-mate");
@@ -45,32 +43,23 @@ app.use(express.static(path.join(__dirname, "public")));
 ========================= */
 const dbUrl = process.env.MONGO_URI;
 
-let isConnected = false;
-
 async function connectDB() {
-  if (isConnected) return;
+  if (mongoose.connection.readyState === 1) return;
 
   await mongoose.connect(dbUrl, {
-    serverSelectionTimeoutMS: 10000,
+    dbName: "tripnext",
+    serverSelectionTimeoutMS: 20000,
+    socketTimeoutMS: 45000,
+    maxPoolSize: 10,
   });
 
-  isConnected = true;
   console.log("✅ MongoDB connected");
-
   await getDemoOwner();
 }
 
-// 🔥 GUARANTEE DB BEFORE ANY REQUEST
-app.use(async (req, res, next) => {
-  try {
-    if (!isConnected) {
-      await connectDB();
-    }
-    next();
-  } catch (err) {
-    console.error("❌ MongoDB connection failed:", err);
-    res.status(500).send("Database connection failed");
-  }
+// 🔥 Connect immediately (ONCE per cold start)
+connectDB().catch(err => {
+  console.error("❌ MongoDB connection error:", err);
 });
 
 /* =========================
@@ -84,7 +73,7 @@ const store = MongoStore.create({
   touchAfter: 24 * 3600,
 });
 
-store.on("error", (err) => {
+store.on("error", err => {
   console.error("❌ Mongo session store error:", err);
 });
 
@@ -110,7 +99,7 @@ app.use(
 app.use(flash());
 
 /* =========================
-   PASSPORT CONFIG
+   PASSPORT
 ========================= */
 app.use(passport.initialize());
 app.use(passport.session());
@@ -140,7 +129,7 @@ app.use("/listings", listingRouter);
 app.use("/listings/:id/reviews", reviewRouter);
 app.use("/", userRouter);
 
-// ⚠️ TEMP: remove after seeding
+// ⚠️ TEMP: REMOVE AFTER SEEDING
 app.use("/admin", seedRouter);
 
 /* =========================
