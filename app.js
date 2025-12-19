@@ -1,128 +1,142 @@
+if (process.env.NODE_ENV !== "production") {
+  require("dotenv").config();
+}
+
 const express = require("express");
 const app = express();
 const mongoose = require("mongoose");
-
-// ✅ Correct paths (app.js is in root folder)
-const Listing = require("./models/listing.js");
 const path = require("path");
 const methodOverride = require("method-override");
 const ejsMate = require("ejs-mate");
-const wrapAsync = require("./utils/wrapAsync.js");
 const ExpressError = require("./utils/ExpressError.js");
-const { listingSchema } = require("./schema.js");
 
-// ✅ MongoDB URL from environment (Railway, Vercel, Render)
-const mongo_url = process.env.MONGO_URL;
+const session = require("express-session");
+const MongoStore = require("connect-mongo");
+const flash = require("connect-flash");
 
-async function main() {
-    await mongoose.connect(mongo_url);
-}
-main()
-    .then(() => {
-        console.log("connected to db");
-    })
-    .catch((err) => {
-        console.log(err);
-    });
+const passport = require("passport");
+const LocalStrategy = require("passport-local");
+const User = require("./models/user.js");
 
-// Redirect home → listings page
-app.get("/", (req, res) => {
-    res.redirect("/listings");
-});
+const listingRouter = require("./routes/listing.js");
+const reviewRouter = require("./routes/review.js");
+const userRouter = require("./routes/user.js");
 
+const getDemoOwner = require("./utils/getDemoOwner.js");
+
+/* =========================
+   APP CONFIG
+========================= */
+app.engine("ejs", ejsMate);
 app.set("view engine", "ejs");
-
-// ✅ FIXED PATHS — works on Railway/Vercel/Render
 app.set("views", path.join(__dirname, "views"));
-app.use(express.static(path.join(__dirname, "public")));
 
 app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
 app.use(methodOverride("_method"));
-app.engine("ejs", ejsMate);
+app.use(express.static(path.join(__dirname, "public")));
 
-// =======================
-//        ROUTES
-// =======================
+/* =========================
+   DATABASE
+========================= */
+const dbUrl = process.env.MONGO_URI;
 
-// Index Route
-app.get("/listings", wrapAsync(async (req, res) => {
-    const allListings = await Listing.find({});
-    res.render("listings/index.ejs", { allListings });
-}));
+async function connectDB() {
+  await mongoose.connect(dbUrl);
+  console.log("✅ MongoDB connected");
 
-// New Route
-app.get("/listings/new", (req, res) => {
-    res.render("listings/new.ejs");
+  // create demo owner once
+  await getDemoOwner();
+  console.log("✅ Demo owner ready");
+}
+
+connectDB().catch((err) => {
+  console.error("❌ MongoDB connection error:", err);
 });
 
-// Show Route
-app.get("/listings/:id", wrapAsync(async (req, res) => {
-    let { id } = req.params;
-    const listing = await Listing.findById(id);
-    res.render("listings/show.ejs", { listing });
-}));
+/* =========================
+   SESSION STORE
+========================= */
+const store = MongoStore.create({
+  mongoUrl: dbUrl,
+  crypto: {
+    secret: process.env.SECRET,
+  },
+  touchAfter: 24 * 3600,
+});
 
-// Create Route
-app.post("/listings", wrapAsync(async (req, res) => {
-    const { listing } = req.body;
+store.on("error", (err) => {
+  console.log("❌ Mongo session store error", err);
+});
 
-    if (!listing) {
-        throw new ExpressError(400, "Invalid listing data");
-    }
+const sessionConfig = {
+  store,
+  name: "session",
+  secret: process.env.SECRET,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    httpOnly: true,
+    expires: Date.now() + 7 * 24 * 60 * 60 * 1000,
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  },
+};
 
-    if (!listing.image) listing.image = {};
+app.use(session(sessionConfig));
+app.use(flash());
 
-    const newListing = new Listing(listing);
-    await newListing.save();
+/* =========================
+   PASSPORT
+========================= */
+app.use(passport.initialize());
+app.use(passport.session());
 
-    res.redirect("/listings");
-}));
+passport.use(new LocalStrategy(User.authenticate()));
+passport.serializeUser(User.serializeUser());
+passport.deserializeUser(User.deserializeUser());
 
-// Edit Route
-app.get("/listings/:id/edit", wrapAsync(async (req, res) => {
-    let { id } = req.params;
-    const listing = await Listing.findById(id);
-    res.render("listings/edit.ejs", { listing });
-}));
+/* =========================
+   GLOBAL VARIABLES
+========================= */
+app.use((req, res, next) => {
+  res.locals.success = req.flash("success");
+  res.locals.error = req.flash("error");
+  res.locals.currUser = req.user;
+  next();
+});
 
-// Update Route
-app.put("/listings/:id", wrapAsync(async (req, res) => {
-    let { id } = req.params;
-    await Listing.findByIdAndUpdate(id, { ...req.body.listing });
-    res.redirect(`/listings/${id}`);
-}));
+/* =========================
+   ROUTES
+========================= */
+app.get("/", (req, res) => {
+  res.redirect("/listings");
+});
 
-// DELETE route
-app.delete("/listings/:id", wrapAsync(async (req, res) => {
-    let { id } = req.params;
-    let deletedListing = await Listing.findByIdAndDelete(id);
-    console.log(deletedListing);
-    res.redirect("/listings");
-}));
+app.use("/listings", listingRouter);
+app.use("/listings/:id/reviews", reviewRouter);
+app.use("/", userRouter);
 
-// =======================
-//        ERROR HANDLER
-// =======================
+/* =========================
+   ERROR HANDLING
+========================= */
+app.all("*", (req, res, next) => {
+  next(new ExpressError(404, "Page Not Found"));
+});
+
 app.use((err, req, res, next) => {
-    let { statusCode = 500, message = "Something went wrong" } = err;
-    res.status(statusCode).render("error.ejs", { message });
+  const { statusCode = 500, message = "Something went wrong" } = err;
+  res.status(statusCode).render("listings/error.ejs", { message });
 });
 
-// =======================
-//  EXPORT FOR HOSTING
-// =======================
+/* =========================
+   EXPORT FOR VERCEL
+========================= */
+module.exports = app;
 
-// ❗ Vercel needs export (no app.listen)
-// ❗ Railway & Render need app.listen
-
-if (process.env.RAILWAY_ENVIRONMENT || process.env.PORT) {
-    // Railway / Render
-    const port = process.env.PORT || 8080;
-    app.listen(port, () => {
-        console.log(`Server running on port ${port}`);
-    });
-} else {
-    // Vercel
-    module.exports = app;
+/* =========================
+   LOCAL SERVER ONLY
+========================= */
+if (process.env.NODE_ENV !== "production") {
+  app.listen(8080, () => {
+    console.log("🚀 Server running on http://localhost:8080");
+  });
 }
