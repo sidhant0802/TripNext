@@ -8,7 +8,7 @@ const mongoose = require("mongoose");
 const path = require("path");
 const methodOverride = require("method-override");
 const ejsMate = require("ejs-mate");
-const ExpressError = require("./utils/ExpressError.js");
+const ExpressError = require("./utils/ExpressError");
 
 const session = require("express-session");
 const MongoStore = require("connect-mongo");
@@ -16,13 +16,13 @@ const flash = require("connect-flash");
 
 const passport = require("passport");
 const LocalStrategy = require("passport-local");
-const User = require("./models/user.js");
+const User = require("./models/user");
 
-const listingRouter = require("./routes/listing.js");
-const reviewRouter = require("./routes/review.js");
-const userRouter = require("./routes/user.js");
+const listingRouter = require("./routes/listing");
+const reviewRouter = require("./routes/review");
+const userRouter = require("./routes/user");
 
-const getDemoOwner = require("./utils/getDemoOwner.js");
+const getDemoOwner = require("./utils/getDemoOwner");
 
 /* =========================
    APP CONFIG
@@ -36,58 +36,65 @@ app.use(methodOverride("_method"));
 app.use(express.static(path.join(__dirname, "public")));
 
 /* =========================
-   DATABASE
+   DATABASE (SERVERLESS SAFE)
 ========================= */
 const dbUrl = process.env.MONGO_URI;
 
+let isConnected = false;
+
 async function connectDB() {
-  await mongoose.connect(dbUrl);
+  if (isConnected) return;
+
+  await mongoose.connect(dbUrl, {
+    serverSelectionTimeoutMS: 10000,
+  });
+
+  isConnected = true;
   console.log("✅ MongoDB connected");
 
-  // create demo owner once
   await getDemoOwner();
-  console.log("✅ Demo owner ready");
 }
 
 connectDB().catch((err) => {
-  console.error("❌ MongoDB connection error:", err);
+  console.error("❌ MongoDB error:", err);
 });
 
 /* =========================
-   SESSION STORE
+   SESSION
 ========================= */
+const sessionSecret = process.env.SECRET || "tripnext_dev_fallback";
+
 const store = MongoStore.create({
   mongoUrl: dbUrl,
   crypto: {
-    secret: process.env.SECRET,
+    secret: sessionSecret,
   },
   touchAfter: 24 * 3600,
 });
 
-store.on("error", (err) => {
-  console.log("❌ Mongo session store error", err);
+store.on("error", (e) => {
+  console.error("❌ Session store error:", e);
 });
 
-const sessionSecret =
-  process.env.SECRET || "tripnext_fallback_secret_dev";
+app.set("trust proxy", 1); // 🔥 REQUIRED for Vercel
 
-const sessionConfig = {
-  store,
-  name: "session",
-  secret: sessionSecret,
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    expires: Date.now() + 7 * 24 * 60 * 60 * 1000,
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-  },
-};
+app.use(
+  session({
+    store,
+    name: "tripnext.sid",
+    secret: sessionSecret,
+    resave: false,
+    saveUninitialized: false,
+    proxy: true,
+    cookie: {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    },
+  })
+);
 
-
-app.use(session(sessionConfig));
 app.use(flash());
 
 /* =========================
@@ -106,7 +113,7 @@ passport.deserializeUser(User.deserializeUser());
 app.use((req, res, next) => {
   res.locals.success = req.flash("success");
   res.locals.error = req.flash("error");
-  res.locals.currUser = req.user;
+  res.locals.currUser = req.user || null;
   next();
 });
 
@@ -130,7 +137,7 @@ app.all("*", (req, res, next) => {
 
 app.use((err, req, res, next) => {
   const { statusCode = 500, message = "Something went wrong" } = err;
-  res.status(statusCode).render("listings/error.ejs", { message });
+  res.status(statusCode).render("listings/error", { message });
 });
 
 /* =========================
@@ -139,10 +146,10 @@ app.use((err, req, res, next) => {
 module.exports = app;
 
 /* =========================
-   LOCAL SERVER ONLY
+   LOCAL DEV ONLY
 ========================= */
 if (process.env.NODE_ENV !== "production") {
   app.listen(8080, () => {
-    console.log("🚀 Server running on http://localhost:8080");
+    console.log("🚀 Local server running at http://localhost:8080");
   });
 }
