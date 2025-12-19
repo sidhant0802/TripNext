@@ -6,7 +6,7 @@ const express = require("express");
 const app = express();
 const mongoose = require("mongoose");
 
-mongoose.set("strictQuery", true);
+// mongoose.set("strictQuery", true);
 
 const path = require("path");
 const methodOverride = require("method-override");
