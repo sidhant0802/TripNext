@@ -6,8 +6,6 @@ const express = require("express");
 const app = express();
 const mongoose = require("mongoose");
 
-// 🔒 Mongoose settings for serverless
-mongoose.set("bufferCommands", false);
 mongoose.set("strictQuery", true);
 
 const path = require("path");
@@ -27,7 +25,7 @@ const User = require("./models/user");
 const listingRouter = require("./routes/listing");
 const reviewRouter = require("./routes/review");
 const userRouter = require("./routes/user");
-const seedRouter = require("./routes/seed"); // ✅ TEMP: remove after seeding
+const seedRouter = require("./routes/seed"); // ⚠️ TEMP
 
 const getDemoOwner = require("./utils/getDemoOwner");
 
@@ -43,7 +41,7 @@ app.use(methodOverride("_method"));
 app.use(express.static(path.join(__dirname, "public")));
 
 /* =========================
-   DATABASE (SERVERLESS Indicates)
+   DATABASE (SERVERLESS SAFE)
 ========================= */
 const dbUrl = process.env.MONGO_URI;
 
@@ -59,12 +57,20 @@ async function connectDB() {
   isConnected = true;
   console.log("✅ MongoDB connected");
 
-  // create demo owner once
   await getDemoOwner();
 }
 
-connectDB().catch((err) => {
-  console.error("❌ MongoDB connection error:", err);
+// 🔥 GUARANTEE DB BEFORE ANY REQUEST
+app.use(async (req, res, next) => {
+  try {
+    if (!isConnected) {
+      await connectDB();
+    }
+    next();
+  } catch (err) {
+    console.error("❌ MongoDB connection failed:", err);
+    res.status(500).send("Database connection failed");
+  }
 });
 
 /* =========================
@@ -74,9 +80,7 @@ const sessionSecret = process.env.SECRET || "tripnext_dev_fallback";
 
 const store = MongoStore.create({
   mongoUrl: dbUrl,
-  crypto: {
-    secret: sessionSecret,
-  },
+  crypto: { secret: sessionSecret },
   touchAfter: 24 * 3600,
 });
 
@@ -84,7 +88,6 @@ store.on("error", (err) => {
   console.error("❌ Mongo session store error:", err);
 });
 
-// REQUIRED for Vercel cookies
 app.set("trust proxy", 1);
 
 app.use(
@@ -137,7 +140,7 @@ app.use("/listings", listingRouter);
 app.use("/listings/:id/reviews", reviewRouter);
 app.use("/", userRouter);
 
-// ⚠️ TEMP: Seed route — REMOVE AFTER SEEDING
+// ⚠️ TEMP: remove after seeding
 app.use("/admin", seedRouter);
 
 /* =========================
