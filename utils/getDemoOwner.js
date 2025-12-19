@@ -1,19 +1,24 @@
 const User = require("../models/user");
 
-const getDemoOwner = async () => {
-  let user = await User.findOne({ username: "sidhant" });
+module.exports = async function getDemoOwner() {
+  const demoUsername = "demo_owner";
 
-  if (!user) {
-    user = new User({
-      username: "sidhan",
-      email: "sidhantnirupam.com",
-    });
+  const existingUser = await User.findOne({ username: demoUsername });
 
-    // passport-local-mongoose SAFE method
-    await User.register(user, "sidhant08");
+  if (existingUser) {
+    console.log("ℹ️ Demo owner already exists");
+    return existingUser;
   }
 
-  return user._id;
-};
+  const demoUser = new User({
+    username: demoUsername,
+    email: "demo@tripnext.com",
+  });
 
-module.exports = getDemoOwner;
+  const password = "demo1234";
+
+  await User.register(demoUser, password);
+
+  console.log("✅ Demo owner created");
+  return demoUser;
+};
