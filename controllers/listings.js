@@ -1,17 +1,13 @@
 const Listing = require("../models/listing");
 
-// ================= INDEX =================
 module.exports.index = async (req, res) => {
   const allListings = await Listing.find({});
   res.render("listings/index", { allListings });
 };
 
-// ================= NEW FORM =================
 module.exports.renderNewForm = (req, res) => {
   res.render("listings/new");
 };
-
-// ================= SHOW =================
 module.exports.showListing = async (req, res) => {
   const { id } = req.params;
 
@@ -30,7 +26,6 @@ module.exports.showListing = async (req, res) => {
   res.render("listings/show", { listing });
 };
 
-// ================= CREATE =================
 module.exports.createListing = async (req, res) => {
   if (!req.user) {
     req.flash("error", "You must be logged in!");
@@ -39,7 +34,6 @@ module.exports.createListing = async (req, res) => {
 
   const listing = new Listing(req.body.listing);
 
-  // ✅ owner = logged-in user
   listing.owner = req.user._id;
 
   if (req.file) {
@@ -60,7 +54,6 @@ module.exports.createListing = async (req, res) => {
   res.redirect("/listings");
 };
 
-// ================= EDIT FORM =================
 module.exports.renderEditForm = async (req, res) => {
   const { id } = req.params;
   const listing = await Listing.findById(id);
@@ -70,7 +63,6 @@ module.exports.renderEditForm = async (req, res) => {
     return res.redirect("/listings");
   }
 
-  // 🔒 owner check
   if (!listing.owner.equals(req.user._id)) {
     req.flash("error", "You don't have permission!");
     return res.redirect(`/listings/${id}`);
@@ -84,7 +76,6 @@ module.exports.renderEditForm = async (req, res) => {
   res.render("listings/edit", { listing, imageUrl });
 };
 
-// ================= UPDATE =================
 module.exports.updateListing = async (req, res) => {
   const { id } = req.params;
 
@@ -114,7 +105,6 @@ module.exports.updateListing = async (req, res) => {
   res.redirect(`/listings/${id}`);
 };
 
-// ================= DELETE =================
 module.exports.destroyListing = async (req, res) => {
   const { id } = req.params;
 
