@@ -2,6 +2,7 @@
   "outputDirectory": "public",
   "cleanUrls": true,
   "routes": [
+    { "src": "/listings", "dest": "/" },
     { "src": "/(.*)", "dest": "index.html" }
   ]
 }
