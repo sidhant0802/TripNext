@@ -3,7 +3,7 @@ const User = require("../models/user");
 module.exports = async function getDemoOwner() {
   const existingUser = await User.findOne({ username: "demo" });
   if (existingUser) {
-    return; // ✅ DO NOTHING if user already exists
+    return; 
   }
 
   const demoUser = new User({ username: "demo", email: "demo@test.com" });
