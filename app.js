@@ -11,25 +11,19 @@ const methodOverride = require("method-override");
 const ejsMate = require("ejs-mate");
 const ExpressError = require("./utils/ExpressError");
 
-// Sessions & auth
 const session = require("express-session");
 const MongoStore = require("connect-mongo");
 const flash = require("connect-flash");
 const passport = require("passport");
 const LocalStrategy = require("passport-local");
 const User = require("./models/user");
-
-// Routes
 const listingRouter = require("./routes/listing");
 const reviewRouter = require("./routes/review");
 const userRouter = require("./routes/user");
-const seedRouter = require("./routes/seed"); // ⚠️ TEMP
+const seedRouter = require("./routes/seed");
 
 const getDemoOwner = require("./utils/getDemoOwner");
 
-/* =========================
-   APP CONFIG
-========================= */
 app.engine("ejs", ejsMate);
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
@@ -38,9 +32,6 @@ app.use(express.urlencoded({ extended: true }));
 app.use(methodOverride("_method"));
 app.use(express.static(path.join(__dirname, "public")));
 
-/* =========================
-   DATABASE (SERVERLESS SAFE)
-========================= */
 const dbUrl = process.env.MONGO_URI;
 
 async function connectDB() {
@@ -54,17 +45,12 @@ async function connectDB() {
   });
 
   console.log("✅ MongoDB connected");
-  // await getDemoOwner();
 }
 
-// 🔥 Connect immediately (ONCE per cold start)
 connectDB().catch(err => {
   console.error("❌ MongoDB connection error:", err);
 });
 
-/* =========================
-   SESSION CONFIG
-========================= */
 const sessionSecret = process.env.SECRET || "tripnext_dev_fallback";
 
 const store = MongoStore.create({
@@ -98,9 +84,6 @@ app.use(
 
 app.use(flash());
 
-/* =========================
-   PASSPORT
-========================= */
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -108,9 +91,6 @@ passport.use(new LocalStrategy(User.authenticate()));
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 
-/* =========================
-   GLOBAL VARIABLES
-========================= */
 app.use((req, res, next) => {
   res.locals.success = req.flash("success");
   res.locals.error = req.flash("error");
@@ -118,9 +98,6 @@ app.use((req, res, next) => {
   next();
 });
 
-/* =========================
-   ROUTES
-========================= */
 app.get("/", (req, res) => {
   res.redirect("/listings");
 });
@@ -129,12 +106,9 @@ app.use("/listings", listingRouter);
 app.use("/listings/:id/reviews", reviewRouter);
 app.use("/", userRouter);
 
-// ⚠️ TEMP: REMOVE AFTER SEEDING
 app.use("/admin", seedRouter);
 
-/* =========================
-   ERROR HANDLING
-========================= */
+
 app.all("*", (req, res, next) => {
   next(new ExpressError(404, "Page Not Found"));
 });
@@ -144,14 +118,7 @@ app.use((err, req, res, next) => {
   res.status(statusCode).render("listings/error", { message });
 });
 
-/* =========================
-   EXPORT FOR VERCEL
-========================= */
 module.exports = app;
-
-/* =========================
-   LOCAL DEV ONLY
-========================= */
 if (process.env.NODE_ENV !== "production") {
   app.listen(8080, () => {
     console.log("🚀 Local server running at http://localhost:8080");
