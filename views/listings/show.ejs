@@ -65,13 +65,11 @@
                 </div>
             </div>
 
-            <!-- Reserve Button -->
             <div class="show-btns d-flex justify-content-center gap-3 mt-3">
                 <form action="/listings/<%= listing._id %>/reservelisting" method="GET">
                     <button class="btn btn-success reserve-btn">Reserve</button>
                 </form>
             </div>
-            <!-- Owner Actions -->
 <% if (currUser) { %>
 
                 <div class="show-btns d-flex justify-content-center gap-3 mt-3">
