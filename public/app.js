@@ -35,7 +35,6 @@ const hotels = [
         let maxPrice = 41500;
         let currentUser = null;
 
-        // Check for logged in user
         function checkUser() {
             const user = localStorage.getItem('tripnext_user');
             if (user) {
@@ -44,7 +43,6 @@ const hotels = [
             }
         }
 
-        // Update auth buttons
         function updateAuthButtons() {
             const authButtons = document.getElementById('authButtons');
             if (currentUser) {
@@ -59,7 +57,6 @@ const hotels = [
             }
         }
 
-        // Navigation functions
         function goToHome() {
             window.location.hash = '';
             renderHomePage();
@@ -80,7 +77,6 @@ const hotels = [
             renderHotelDetails(hotelId);
         }
 
-        // Show success message
         function showSuccess(message) {
             const successDiv = document.createElement('div');
             successDiv.className = 'success-message';
@@ -91,7 +87,6 @@ const hotels = [
             }, 3000);
         }
 
-        // Render Home Page
         function renderHomePage() {
             const content = `
                 <div class="container">
@@ -127,7 +122,6 @@ const hotels = [
             renderHotels();
         }
 
-        // Render Login Page
         function renderLoginPage() {
             const content = `
                 <div class="auth-page">
@@ -152,7 +146,6 @@ const hotels = [
             document.getElementById('mainContent').innerHTML = content;
         }
 
-        // Render Signup Page
         function renderSignupPage() {
             const content = `
                 <div class="auth-page">
@@ -181,7 +174,6 @@ const hotels = [
             document.getElementById('mainContent').innerHTML = content;
         }
 
-        // Render Hotel Details
         function renderHotelDetails(hotelId) {
             const hotel = hotels.find(h => h.id === parseInt(hotelId));
             if (!hotel) {
@@ -221,7 +213,6 @@ const hotels = [
             document.getElementById('mainContent').innerHTML = content;
         }
 
-        // Handle Login
         function handleLogin(e) {
             e.preventDefault();
             const name = document.getElementById('loginEmail').value.split('@')[0];
@@ -233,7 +224,6 @@ const hotels = [
             setTimeout(() => goToHome(), 1000);
         }
 
-        // Handle Signup
         function handleSignup(e) {
             e.preventDefault();
             const name = document.getElementById('signupName').value;
@@ -245,7 +235,6 @@ const hotels = [
             setTimeout(() => goToHome(), 1000);
         }
 
-        // Render Categories
         function renderCategories() {
             const categories = ["All", ...new Set(hotels.map(h => h.category))];
             const container = document.getElementById('categories');
@@ -255,21 +244,18 @@ const hotels = [
             ).join('');
         }
 
-        // Filter by Category
         function filterByCategory(category) {
             currentCategory = category;
             renderCategories();
             renderHotels();
         }
 
-        // Update Price
         function updatePrice() {
             maxPrice = document.getElementById('priceRange').value;
             document.getElementById('priceValue').textContent = parseInt(maxPrice).toLocaleString('en-IN');
             renderHotels();
         }
 
-        // Search Hotels
         function searchHotels() {
             renderHotels();
         }
@@ -278,7 +264,6 @@ const hotels = [
             renderHotels();
         }
 
-        // Render Hotels
         function renderHotels() {
             const searchInput = document.getElementById('searchInput');
             const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
@@ -314,7 +299,6 @@ const hotels = [
             `).join('');
         }
 
-        // Book Hotel
         function bookHotel(name, id) {
             if (!currentUser) {
                 showSuccess('Please login to book hotels!');
@@ -325,7 +309,6 @@ const hotels = [
             setTimeout(() => goToHome(), 2000);
         }
 
-        // Handle URL changes
         window.addEventListener('hashchange', function() {
             const hash = window.location.hash.substring(1);
             if (hash === 'login') {
@@ -340,7 +323,6 @@ const hotels = [
             }
         });
 
-        // Initialize
         checkUser();
         const hash = window.location.hash.substring(1);
         if (hash === 'login') {
