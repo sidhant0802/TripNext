@@ -3,6 +3,6 @@
   "cleanUrls": true,
   "routes": [
     { "src": "/listings", "dest": "/" },
-    { "src": "/(.*)", "dest": "index.html" }
+    { "src": "/(.*)", "dest": "index.html" } 
   ]
 }
