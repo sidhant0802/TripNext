@@ -1,15 +1,11 @@
-### 🌍 WanderLust Project 🏡
+🌍 TripNext
 
-#### Project Summary
-**TripNext** is a comprehensive Full Stack Web Development project designed to facilitate the browsing and booking of vacation accommodations, including houses, villas, and farmhouses. This platform allows users to add their own properties to the listing, providing a diverse range of options for potential renters. Key features include a seamless booking system that simplifies the reservation process and real-time property location views via Mapbox API. To enhance user experience and security, the application supports fast login options through Google OAuth and GitHub OAuth. The application also boasts a dynamic server for responsive performance and an intuitive, aesthetically pleasing user interface, ensuring an engaging and efficient user experience.
+TripNext is a travel accommodation platform built to help users explore different hostel listings through category-based search and price-based filtering. The application emphasizes simplicity, usability, and performance, allowing users to quickly find accommodations that match their preferences and budget.
 
-#### Front-end 🌐
-- **Technologies Used**: HTML, CSS, JavaScript, Bootstrap, EJS
-- **Features**:
-  - 📱 **Responsive Design**: Optimized for various devices
-  - 🔍 **User-friendly Interface**: For searching and listing properties
-  - 🗺️ **Mapbox API Integration**: For location-based search and property mapping
-    
+The user interface is fully developed with a clean and modern design that works smoothly on both mobile phones and desktop screens. Responsive layouts, consistent styling, and intuitive navigation ensure that users can browse listings, view hostel details, and move across pages effortlessly regardless of device size. Careful attention has been given to layout structure, spacing, and typography to deliver a pleasant and accessible browsing experience.
 
+Users can explore hostel listings in an organized manner, apply filters to narrow down results, and view detailed information for each hostel, including pricing and category details. The interface is optimized for clarity and ease of use, making the platform suitable for both first-time and returning users.
 
-- **Live Application**: [WanderLust Project](https://trip-next-two.vercel.app/)
+The backend is currently under active development and will be completed soon. It is designed to support secure user authentication with login and signup functionality and full integration with MongoDB for reliable data storage. The system will allow any authenticated user to add new hostel listings, while admin users will have permissions to edit or delete listings, ensuring proper moderation and data consistency.
+
+TripNext follows a structured and scalable approach, focusing on real-world development practices such as authentication, role-based access control, database integration, and maintainable architecture.
